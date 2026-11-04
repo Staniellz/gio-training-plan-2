@@ -9,14 +9,22 @@ ASP.NET Core 10 Web API for a small course catalog with enrollments. PostgreSQL 
 
 ## Run
 
+The database password is not in the repo. Copy `.env.example` to `.env`, set `POSTGRES_PASSWORD`, then store the same value in user secrets for the API.
+
 ```bash
+cp .env.example .env
 docker compose up -d postgres
 dotnet build
 dotnet test
+dotnet user-secrets set "ConnectionStrings:CourseHub" "Host=localhost;Port=5432;Database=coursehub;Username=coursehub;Password=<POSTGRES_PASSWORD from .env>" --project src/CourseHub.Api
 dotnet run --project src/CourseHub.Api
 ```
 
-The API listens on `http://localhost:5090`. On first start it creates the database and seeds 200 courses. Sample calls are in `requests.http`; endpoints are in `docs/api.md`; enrollment rules are in `docs/enrollment-rules.md`.
+On PowerShell, `cp .env.example .env` is `Copy-Item .env.example .env`.
+
+The API listens on `http://localhost:5090`. On first start it creates the database and seeds 200 courses. Sample calls are in `requests.http`; endpoints are in `docs/api.md`; enrollment rules are in `docs/enrollment-rules.md`. Where secrets live, including the Plan 1 repo, is in `docs/secrets.md`.
+
+If Postgres was already created with an older password, either put that same value in `.env` and user secrets, or run `docker compose down -v` and start again.
 
 Redis is in `docker-compose.yml` for later work: `docker compose up -d redis`.
 

@@ -1,4 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <UserSecretsId>ffe875a1-22b8-4aa2-9516-200d0f58796a</UserSecretsId>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CourseHub.Core\CourseHub.Core.csproj" />
   </ItemGroup>
