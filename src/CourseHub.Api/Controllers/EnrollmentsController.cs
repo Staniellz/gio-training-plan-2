@@ -1,12 +1,15 @@
+using CourseHub.Api.Auth;
 using CourseHub.Core.Data;
 using CourseHub.Core.Domain;
 using CourseHub.Core.Policies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace CourseHub.Api.Controllers;
 
 [ApiController]
+[Authorize(Roles = "learner")]
 public class EnrollmentsController : ControllerBase
 {
     private readonly CourseHubDbContext _db;
@@ -19,10 +22,10 @@ public class EnrollmentsController : ControllerBase
     [HttpPost("api/courses/{courseId:int}/enrollments")]
     public async Task<IActionResult> Enroll(int courseId)
     {
-        var learnerId = Request.Headers["X-User-Id"].ToString();
+        var learnerId = CallerId.From(User);
         if (string.IsNullOrEmpty(learnerId))
         {
-            return BadRequest("Missing user");
+            return Unauthorized();
         }
 
         var course = await _db.Courses.FirstOrDefaultAsync(c => c.Id == courseId);
@@ -55,7 +58,12 @@ public class EnrollmentsController : ControllerBase
     [HttpDelete("api/courses/{courseId:int}/enrollments/me")]
     public async Task<IActionResult> Drop(int courseId)
     {
-        var learnerId = Request.Headers["X-User-Id"].ToString();
+        var learnerId = CallerId.From(User);
+        if (string.IsNullOrEmpty(learnerId))
+        {
+            return Unauthorized();
+        }
+
         var enrollment = await _db.Enrollments.FirstOrDefaultAsync(e =>
             e.CourseId == courseId && e.LearnerId == learnerId && e.Status == EnrollmentStatus.Active);
         if (enrollment is null)
@@ -71,7 +79,12 @@ public class EnrollmentsController : ControllerBase
     [HttpGet("api/me/enrollments")]
     public async Task<IActionResult> Mine()
     {
-        var learnerId = Request.Headers["X-User-Id"].ToString();
+        var learnerId = CallerId.From(User);
+        if (string.IsNullOrEmpty(learnerId))
+        {
+            return Unauthorized();
+        }
+
         var items = await _db.Enrollments
             .Where(e => e.LearnerId == learnerId)
             .Select(e => new { e.Id, e.CourseId, CourseTitle = e.Course!.Title, e.Status, e.EnrolledAt })

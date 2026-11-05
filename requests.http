@@ -1,14 +1,71 @@
 @base = http://localhost:5090
 
+###
 GET {{base}}/api/courses/1
 
 ###
-GET {{base}}/api/courses
+# Paste tokens from `dotnet user-jwts print`. Do not commit them.
+@instructorBen =
+@instructorAna =
+@learner =
 
 ###
+# Anonymous. Expect 401.
+PUT {{base}}/api/courses/1
+Content-Type: application/json
+
+{
+  "title": "C# Track 001",
+  "description": "Self-paced C# course number 1.",
+  "isPublished": true,
+  "capacity": 30
+}
+
+###
+# Other instructor. Course 1 belongs to instructor-ben. Expect 403.
+PUT {{base}}/api/courses/1
+Authorization: Bearer {{instructorAna}}
+Content-Type: application/json
+
+{
+  "title": "C# Track 001",
+  "description": "Self-paced C# course number 1.",
+  "isPublished": true,
+  "capacity": 30
+}
+
+###
+# Owner. Expect 204.
+PUT {{base}}/api/courses/1
+Authorization: Bearer {{instructorBen}}
+Content-Type: application/json
+
+{
+  "title": "C# Track 001",
+  "description": "Self-paced C# course number 1.",
+  "isPublished": true,
+  "capacity": 30
+}
+
+###
+# Learner creating a course. Expect 403.
+POST {{base}}/api/courses
+Authorization: Bearer {{learner}}
+Content-Type: application/json
+
+{
+  "title": "Learner course",
+  "description": "Should be refused.",
+  "isPublished": false,
+  "capacity": 10
+}
+
+###
+# Enrollment owner is the token sub, not X-User-Id. Expect 201.
 POST {{base}}/api/courses/1/enrollments
-X-User-Id: learner-100
+Authorization: Bearer {{learner}}
+X-User-Id: not-the-token
 
 ###
 GET {{base}}/api/me/enrollments
-X-User-Id: learner-100
+Authorization: Bearer {{learner}}
