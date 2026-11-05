@@ -1,5 +1,7 @@
+using CourseHub.Api.Auth;
 using CourseHub.Core.Data;
 using CourseHub.Core.Domain;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,10 +12,12 @@ namespace CourseHub.Api.Controllers;
 public class CoursesController : ControllerBase
 {
     private readonly CourseHubDbContext _db;
+    private readonly IAuthorizationService _authorization;
 
-    public CoursesController(CourseHubDbContext db)
+    public CoursesController(CourseHubDbContext db, IAuthorizationService authorization)
     {
         _db = db;
+        _authorization = authorization;
     }
 
     [HttpGet]
@@ -61,13 +65,14 @@ public class CoursesController : ControllerBase
                 .ToList());
     }
 
+    [Authorize(Roles = "instructor")]
     [HttpPost]
     public async Task<ActionResult<CourseDetail>> Create(SaveCourseRequest request)
     {
-        var userId = Request.Headers["X-User-Id"].ToString();
+        var userId = CallerId.From(User);
         if (string.IsNullOrEmpty(userId))
         {
-            return BadRequest("Missing user");
+            return Unauthorized();
         }
 
         var course = new Course
@@ -87,6 +92,7 @@ public class CoursesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = course.Id }, await GetById(course.Id));
     }
 
+    [Authorize]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, SaveCourseRequest request)
     {
@@ -94,6 +100,12 @@ public class CoursesController : ControllerBase
         if (course is null)
         {
             return NotFound(new { error = "Course not found" });
+        }
+
+        var allowed = await _authorization.AuthorizeAsync(User, course, "CourseOwner");
+        if (!allowed.Succeeded)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
         }
 
         course.Title = request.Title;

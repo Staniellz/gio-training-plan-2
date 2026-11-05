@@ -1,10 +1,24 @@
+using CourseHub.Api.Auth;
 using CourseHub.Core.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CourseOwner", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.Requirements.Add(new CourseOwnerRequirement());
+    });
+});
+builder.Services.AddSingleton<IAuthorizationHandler, CourseOwnerHandler>();
 
 var connectionString = builder.Configuration.GetConnectionString("CourseHub");
 if (string.IsNullOrWhiteSpace(connectionString) || !HasDbPassword(connectionString))
@@ -20,10 +34,22 @@ var app = builder.Build();
 
 app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
 {
-    var error = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+    var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+    var traceId = System.Diagnostics.Activity.Current?.Id ?? context.TraceIdentifier;
+    var logger = context.RequestServices.GetRequiredService<ILoggerFactory>()
+        .CreateLogger("CourseHub.Api.Exceptions");
+    logger.LogError(exception, "Unhandled exception. TraceId: {TraceId}", traceId);
+
     context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-    await context.Response.WriteAsJsonAsync(new { error = error?.Message });
+    await context.Response.WriteAsJsonAsync(new
+    {
+        error = "An unexpected error occurred.",
+        traceId
+    });
 }));
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 using (var scope = app.Services.CreateScope())
 {

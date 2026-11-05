@@ -1,12 +1,13 @@
 # Secrets
 
-Where credentials live for CourseHub (`gio-training-plan-2`) and the Plan 1 repo (`hello-logging-structured-logging`). Updated 2026-11-04.
+Where credentials live for CourseHub (`gio-training-plan-2`) and the Plan 1 repo (`hello-logging-structured-logging`). Updated 2026-11-05.
 
 ## Where each secret lives
 
 | Secret | Dev | CI | Production |
 |---|---|---|---|
 | CourseHub Postgres password | Gitignored `.env` key `POSTGRES_PASSWORD`. Compose loads that file with `env_file`. The API reads `ConnectionStrings:CourseHub` from `dotnet user-secrets`, not from `appsettings.json`. | GitHub Actions builds and runs unit tests only. No database and no secret. | Not deployed. When it is, set the connection string in App Service configuration or Key Vault. Not in the image and not in the repo. |
+| CourseHub JWT signing key | `dotnet user-jwts` stores it in user secrets for `src/CourseHub.Api`. `appsettings.Development.json` has the issuer and audience only. | Tests do not call the API. No signing key in CI. | Not deployed. |
 | HelloLogging Postgres password | Gitignored `.env` key `POSTGRES_PASSWORD`, loaded with `env_file`. The API appends it to `ConnectionStrings__Db` at startup when that string has no password yet. For `dotnet run` on the host, user-secrets `ConnectionStrings:Db` holds the full string. | No CI job uses this database. | Not deployed. Same rule: host settings or Key Vault. |
 | HelloLogging Grafana admin password | Gitignored `.env` key `GF_SECURITY_ADMIN_PASSWORD`. Compose loads `.env` with `env_file`, so the yaml file has no password value. | Not used in CI. | Not deployed. |
 
