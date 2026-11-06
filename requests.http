@@ -1,6 +1,9 @@
 @base = http://localhost:5090
 
 ###
+GET {{base}}/api/courses?page=1&pageSize=20
+
+###
 GET {{base}}/api/courses/1
 
 ###

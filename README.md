@@ -22,7 +22,7 @@ dotnet run --project src/CourseHub.Api
 
 On PowerShell, `cp .env.example .env` is `Copy-Item .env.example .env`.
 
-The API listens on `http://localhost:5090`. On first start it creates the database and seeds 200 courses. Calls that change data send `Authorization: Bearer`. The signing key stays in user secrets; create tokens with `dotnet user-jwts` as described in `docs/api.md`. Sample calls are in `requests.http`. Enrollment rules are in `docs/enrollment-rules.md`. Where secrets live, including the Plan 1 repo, is in `docs/secrets.md`.
+The API listens on `http://localhost:5090`. On first start it applies EF Core migrations and seeds 200 courses. A volume created by the older `EnsureCreated` startup has no migration history, so reset it with `docker compose down -v` before this version. Calls that change data send `Authorization: Bearer`. The signing key stays in user secrets; create tokens with `dotnet user-jwts` as described in `docs/api.md`. Sample calls are in `requests.http`. Enrollment rules are in `docs/enrollment-rules.md`. Where secrets live, including the Plan 1 repo, is in `docs/secrets.md`.
 
 If Postgres was already created with an older password, either put that same value in `.env` and user secrets, or run `docker compose down -v` and start again.
 

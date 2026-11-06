@@ -5,6 +5,7 @@ using CourseHub.Core.Policies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace CourseHub.Api.Controllers;
 
@@ -50,9 +51,21 @@ public class EnrollmentsController : ControllerBase
         };
 
         _db.Enrollments.Add(enrollment);
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+        {
+            return Conflict(new { message = "Enrollment refused", code = "already-enrolled" });
+        }
 
         return Created($"/api/me/enrollments", new { enrollment.Id, enrollment.CourseId, enrollment.LearnerId });
+    }
+
+    private static bool IsUniqueViolation(DbUpdateException ex)
+    {
+        return ex.InnerException is PostgresException pg && pg.SqlState == PostgresErrorCodes.UniqueViolation;
     }
 
     [HttpDelete("api/courses/{courseId:int}/enrollments/me")]

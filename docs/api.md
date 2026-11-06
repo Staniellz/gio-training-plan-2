@@ -6,7 +6,7 @@ The caller is the `sub` claim on a JWT bearer token (`Authorization: Bearer`). T
 
 | Method | Path | Who | Purpose | Success |
 |---|---|---|---|---|
-| GET | `/api/courses` | anyone | List all courses with module count, total minutes and active enrollments | 200 |
+| GET | `/api/courses?page=1&pageSize=20` | anyone | One page of courses. `page` starts at 1. `pageSize` is 1 to 50. Each row has module count, total minutes and active enrollments. | 200, 400 |
 | GET | `/api/courses/{id}` | anyone | Course detail with modules | 200, 404 |
 | POST | `/api/courses` | role `instructor` | Create a course. The instructor id is the caller's `sub`. | 201, 401, 403 |
 | PUT | `/api/courses/{id}` | that course's instructor | Update a course. `sub` must equal the course's instructor id. | 204, 401, 403, 404 |
@@ -22,6 +22,6 @@ dotnet user-jwts create --project src/CourseHub.Api --name instructor-ana --role
 dotnet user-jwts create --project src/CourseHub.Api --name learner-day3 --role learner
 ```
 
-Error bodies: 404 `{ "error": "..." }`, 409 `{ "message": "...", "code": "<reason code>" }`. An unhandled exception is `{ "error": "An unexpected error occurred.", "traceId": "..." }` and the exception is logged on the server.
+Error bodies: 400 `{ "error": "..." }`, 404 `{ "error": "..." }`, 409 `{ "message": "...", "code": "<reason code>" }`. A second active enrollment for the same learner and course is `409` with code `already-enrolled`, including when two requests pass the in-memory check and the unique index `IX_Enrollments_OneActivePerLearner` rejects the insert. An unhandled exception is `{ "error": "An unexpected error occurred.", "traceId": "..." }` and the exception is logged on the server.
 
 Seed data: 200 courses (5 modules each), instructors `instructor-ana` and `instructor-ben`. Course 1 has 29 active enrollments and capacity 30. Every 10th course is unpublished. Every 25th course has capacity 0. Every 7th course closes enrollment at 2026-12-31 16:00 UTC. `learner-gio` has a dropped enrollment in course 3.
