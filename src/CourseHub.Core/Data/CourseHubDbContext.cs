@@ -21,5 +21,14 @@ public class CourseHubDbContext : DbContext
             b.HasMany(c => c.Modules).WithOne().HasForeignKey(m => m.CourseId);
             b.HasMany(c => c.Enrollments).WithOne(e => e.Course).HasForeignKey(e => e.CourseId);
         });
+
+        modelBuilder.Entity<Enrollment>(b =>
+        {
+            // 0 is EnrollmentStatus.Active. Dropped rows stay, so a learner can enroll again.
+            b.HasIndex(e => new { e.CourseId, e.LearnerId })
+                .IsUnique()
+                .HasFilter("\"Status\" = 0")
+                .HasDatabaseName("IX_Enrollments_OneActivePerLearner");
+        });
     }
 }

@@ -21,26 +21,29 @@ public class CoursesController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<CourseSummary>> GetAll()
+    public async Task<ActionResult<IEnumerable<CourseSummary>>> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-        var courses = _db.Courses.OrderBy(c => c.Id).ToList();
-        var result = new List<CourseSummary>();
-
-        foreach (var course in courses)
+        if (page < 1 || pageSize < 1 || pageSize > 50)
         {
-            var modules = _db.Modules.Where(m => m.CourseId == course.Id).ToList();
-            var active = _db.Enrollments.Count(e => e.CourseId == course.Id && e.Status == EnrollmentStatus.Active);
-            result.Add(new CourseSummary(
-                course.Id,
-                course.Title,
-                course.InstructorId,
-                course.IsPublished,
-                modules.Count,
-                modules.Sum(m => m.DurationMinutes),
-                active));
+            return BadRequest(new { error = "page must be at least 1 and pageSize must be from 1 to 50." });
         }
 
-        return result;
+        var courses = await _db.Courses
+            .AsNoTracking()
+            .OrderBy(c => c.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(c => new CourseSummary(
+                c.Id,
+                c.Title,
+                c.InstructorId,
+                c.IsPublished,
+                c.Modules.Count,
+                c.Modules.Sum(m => m.DurationMinutes),
+                c.Enrollments.Count(e => e.Status == EnrollmentStatus.Active)))
+            .ToListAsync();
+
+        return courses;
     }
 
     [HttpGet("{id:int}")]

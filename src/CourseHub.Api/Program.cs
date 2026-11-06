@@ -54,7 +54,7 @@ app.UseAuthorization();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<CourseHubDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
     DbSeeder.Seed(db);
 }
 
